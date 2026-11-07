@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Pocket Quest — Controller</title>
+<link rel="stylesheet" href="css/controller.css">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="js/net-config.js?v=3"></script>
+<script src="js/net.js?v=3"></script>
+</head>
+<body>
+<div id="status-bar" class="disconnected">Enter room code to connect</div>
+
+<!-- MENU -->
+<div id="menu" class="screen active">
+  <h1>POCKET<br>QUEST</h1>
+  <div class="sub">Enter the room code shown on the host screen</div>
+  <div class="join-row">
+    <input id="room-code" type="text" maxlength="4" placeholder="CODE" value="" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button id="join-btn">JOIN</button>
+  </div>
+  <div id="join-status"></div>
+  <button id="rejoin-last" style="display:none"></button>
+  <div class="divider"></div>
+  <div class="menu-label">Customize while you wait</div>
+  <div class="menu-name-row">
+    <input id="menu-name" type="text" maxlength="8" placeholder="Name" value="">
+    <div id="menu-colors"></div>
+  </div>
+  <div id="menu-class-grid"></div>
+  <div class="divider"></div>
+  <div class="how-to">
+    <span class="how-to-title">HOW TO PLAY</span><br>
+    <span class="how-to-key">Swipe</span> to move on the hex grid · <span class="how-to-key">ATK</span> hits adjacent enemies<br>
+    <span class="how-to-key">SKILL</span> is your class ability (has cooldown) · <span class="how-to-key">DEF</span> blocks half damage<br>
+    <span class="how-to-key">ITEM</span> uses your consumable (bombs, potions, etc.)<br>
+    Survive all encounters to win · watch the host screen!
+  </div>
+  <a class="tutorial-link" href="tutorial.html">▶ Interactive Tutorial</a>
+  <div class="wait-pulse waiting-note">Waiting for room code</div>
+  <button id="menu-back" onmouseenter="this.style.color='#999'" onmouseleave="this.style.color='#666'">← Back</button>
+</div>
+
+<!-- LOBBY -->
+<div id="lobby" class="screen">
+  <h2>Join Game</h2>
+  <div class="room-code" id="ctrl-room-code">LOCAL GAME</div>
+  <div class="section-label">Customize</div>
+  <div class="name-row">
+    <input id="player-name" type="text" maxlength="8" placeholder="Name" value="">
+    <div id="color-picks"></div>
+  </div>
+  <div class="class-label">Pick your class</div>
+  <div id="class-grid"></div>
+  <div class="section-label">Loadout</div>
+  <div id="loadout-row"></div>
+  <div id="loadout-desc"></div>
+  <button id="ready-btn" class="ready-btn">READY UP</button>
+  <div id="lobby-roster"></div>
+  <div id="lobby-status">Pick your hero, then tap READY UP</div>
+  <div class="lobby-hints">Swipe to move · ATK hits adjacent enemies · SKILL is your class ability (cooldown) · DEF halves damage · ITEM uses consumable</div>
+</div>
+
+<!-- GAME -->
+<div id="game" class="screen">
+  <div id="boss-bar"></div>
+  <div id="player-banner">
+    <span class="name" id="p-name">—</span>
+    <span class="hp-text" id="p-hp">—</span>
+    <span class="loadout-tag" id="p-loadout"></span>
+  </div>
+  <div class="bar-wrap" id="hp-bar-wrap"><div id="hp-ghost"></div><div id="hp-bar" class="bar-fill"></div></div>
+  <div class="bar-wrap" id="cd-wrap"><div id="cd-bar" class="bar-fill"></div></div>
+  <div class="bar-wrap" id="tick-wrap"><div id="tick-bar" class="bar-fill"></div></div>
+  <div id="game-msg"></div>
+  <div id="input-confirm"></div>
+  <div id="status-effects"></div>
+  <div id="item-row">No item</div>
+  <div id="upgrade-row"></div>
+
+  <div id="controls">
+    <div id="dpad">
+      <div id="swipe-zone"></div>
+      <div class="dpad-center" id="dpad-center">move</div>
+    </div>
+    <div id="actions">
+      <div class="act-btn" data-action="attack"><span class="act-icon">⚔</span><br><span class="act-label">ATK</span><br><span class="act-hint">Hit adjacent</span></div>
+      <div class="act-btn" id="skill-btn" data-action="skill"><span class="act-icon">✦</span><br><span class="act-label">SKILL</span><br><span class="act-hint">Class ability</span></div>
+      <div class="act-btn" data-action="defend"><span class="act-icon">🛡</span><br><span class="act-label">DEF</span><br><span class="act-hint">Half damage</span></div>
+      <div class="act-btn" id="item-btn" data-action="item"><span class="act-icon">📦</span><br><span class="act-label">ITEM</span><br><span class="act-hint">Use consumable</span></div>
+    </div>
+    <div id="info-strip">
+      <span id="info-biome"></span>
+      <span id="info-enc"></span>
+      <span id="info-foes"></span>
+      <span id="info-level"></span>
+    </div>
+  </div>
+</div>
+
+<!-- UPGRADE PICK -->
+<div id="upgrade-screen" class="screen">
+  <div class="title">Choose an Upgrade</div>
+  <div id="upgrade-choices"></div>
+  <div id="upgrade-status"></div>
+</div>
+
+<!-- REJOIN (game already running, this controller has no hero) -->
+<div id="rejoin-screen" class="screen">
+  <div class="title">Game in progress</div>
+  <div id="rejoin-sub">Tap your hero to jump back in</div>
+  <div id="rejoin-choices"></div>
+</div>
+
+<!-- RESULTS -->
+<div id="results-screen" class="screen">
+  <div class="results-divider"></div>
+  <div class="title" id="results-title">Game Over</div>
+  <div class="results-divider tight"></div>
+  <div id="my-stats"></div>
+  <div class="results-note">Check the host screen for awards</div>
+</div>
+
+<script type="module" src="js/controller.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+name = "pocket-hex-relay"
+main = "src/index.js"
+compatibility_date = "2025-10-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+# SQLite-backed Durable Objects are available on the Workers Free plan.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
+
+[vars]
+# Comma-separated list of page origins allowed to connect, e.g.
+# "https://hansvidaure24.github.io,http://localhost:8000". Empty = allow any.
+ALLOWED_ORIGINS = "https://hansvidaure24.github.io,http://localhost:8000,http://127.0.0.1:8000"

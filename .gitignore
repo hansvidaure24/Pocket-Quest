@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+
+# Editor
+*.swp
+*.swo
+*.bak
+*.orig
+*~
+.vscode/
+.idea/
+
+# Build artifacts
+dist/

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Pocket Quest — Host</title>
+<link rel="stylesheet" href="css/host.css">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="js/net-config.js?v=3"></script>
+<script src="js/net.js?v=3"></script>
+</head>
+<body>
+<!-- MENU BG CANVAS -->
+<canvas id="menu-bg"></canvas>
+<!-- IRIS OVERLAY CANVAS -->
+<canvas id="iris-canvas" style="display:none"></canvas>
+<!-- MENU SCREEN (unused — menu is now index.html) -->
+<div id="menu-screen" style="display:none"></div>
+
+<!-- LOBBY SCREEN -->
+<div id="lobby-screen" style="display:none">
+  <!-- LEFT: Join info (~22%) -->
+  <div class="lobby-join">
+    <div class="lobby-join-title">Join the Quest</div>
+    <div id="lobby-room" title="Click to copy">…</div>
+    <div class="lobby-join-hint">Enter code on your phone</div>
+    <canvas id="qr-canvas" width="120" height="120" title="Scan to join"></canvas>
+    <div id="lobby-net">○ Connecting…</div>
+    <div class="lobby-spacer"></div>
+    <button class="gbtn" id="lobby-back">← Back</button>
+  </div>
+  <!-- RIGHT: Players + config (~78%) -->
+  <div class="lobby-main">
+    <!-- Player cards -->
+    <div class="lobby-party-title">Your Party</div>
+    <div id="lobby-players"></div>
+    <!-- Host character config -->
+    <div id="host-config-row">
+      <label class="host-play-label"><input id="host-play" type="checkbox" checked> Play as Host</label>
+      <span id="host-config" style="display:contents">
+      <input id="host-name" type="text" maxlength="8" placeholder="Name" value="">
+      <span id="host-colors"></span>
+      <select id="class-sel"><option value="0">Warrior — Melee Tank</option><option value="1">Mage — Ranged AoE</option><option value="2">Rogue — Fast Melee</option><option value="3">Cleric — Healer</option></select>
+      <select id="loadout-sel"><option value="0">A</option><option value="1">B</option></select>
+      </span>
+    </div>
+    <div id="lobby-loadout-desc"></div>
+    <!-- Game setup -->
+    <div class="lobby-options">
+      <select id="mode-sel"><option value="campaign" selected>Campaign</option><option value="survival">Survival</option></select>
+      <select id="diff-sel"><option value="0">Easy</option><option value="1" selected>Normal</option><option value="2">Hard</option></select>
+      <span id="length-wrap"><select id="length-sel"><option value="4" selected>Short (4)</option><option value="6">Long (6)</option></select></span>
+      <select id="biome-sel"><option value="random" selected>Random Biome</option><option value="0">Crypt</option><option value="1">Swamp</option><option value="2">Volcano</option><option value="3">Ruins</option></select>
+      <span id="best-score" style="display:none"></span>
+      <button id="adv-toggle">⚙ Settings</button>
+    </div>
+    <!-- Advanced settings (hidden by default) -->
+    <div id="adv-settings" style="display:none">
+      <label>Party:<select id="player-sel"><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option></select></label>
+      <label>Speed:<select id="speed-sel"><option value="2000">Chill</option><option value="1500" selected>Normal</option><option value="1000">Frantic</option></select></label>
+      <label>Shake:<select id="shake-sel"><option value="1" selected>Full</option><option value="0.5">Low</option><option value="0">Off</option></select></label>
+      <label>Vol:<input id="vol-sl" type="range" min="0" max="100" value="60"></label>
+    </div>
+    <!-- START -->
+    <button class="gbtn gbtn-go" id="start-btn">START CAMPAIGN</button>
+    <button id="practice-btn">Practice Solo</button>
+  </div>
+</div>
+
+<!-- GAME SCREEN (fullscreen canvas) -->
+<div id="game-screen" style="display:none">
+  <div id="dc-banner" style="display:none"></div>
+  <div id="top-bar" style="display:none"><div id="campaign-bar"></div><span class="sep">|</span><span id="game-status-txt"></span>
+    <button id="restart-btn" class="gbtn" style="display:none">NEW CAMPAIGN</button>
+  </div>
+  <div id="tick-bar" style="display:none"><div id="tick-fill"></div></div>
+  <div id="msg" style="display:none"></div>
+  <div id="input-indicator" style="display:none"></div>
+  <canvas id="c"></canvas>
+  <div id="hud" style="display:none"></div>
+  <div id="controls-help" style="display:none"></div>
+  <div id="touch-btns" style="display:none">
+    <button class="tbtn gbtn" data-input="attack">⚔ ATK</button>
+    <button class="tbtn gbtn" data-input="skill">✦ SKILL</button>
+    <button class="tbtn gbtn" data-input="defend">🛡 DEF</button>
+    <button class="tbtn gbtn" data-input="item">📦 ITEM</button>
+  </div>
+</div>
+<div id="combat-log-wrap" style="display:none">
+<div class="combat-log-box">
+<div class="combat-log-title">Combat Log</div>
+<div id="combat-log"></div>
+</div></div>
+<div id="tooltip"></div>
+<div id="pause-overlay"><span>PAUSED</span><div class="pause-info" id="pause-info"></div><div class="pause-hint">P or Esc to resume · H for help</div></div>
+<div id="help-overlay" style="display:none">
+  <div class="help-card">
+    <h2 class="help-title">Controls</h2>
+    <table class="help-keys">
+      <tr><td class="help-key k-move first">WASD</td><td>Move (hold two for diagonals)</td></tr>
+      <tr><td class="help-key k-attack">Space</td><td>Attack adjacent enemies</td></tr>
+      <tr><td class="help-key k-skill">F</td><td>Use class skill</td></tr>
+      <tr><td class="help-key k-defend">G</td><td>Defend (halves next hit)</td></tr>
+      <tr><td class="help-key k-item">1</td><td>Use consumable item</td></tr>
+      <tr><td class="help-key k-misc">P</td><td>Pause</td></tr>
+      <tr><td class="help-key k-misc">R</td><td>Restart encounter</td></tr>
+      <tr><td class="help-key k-misc">H</td><td>This help screen</td></tr>
+      <tr><td class="help-key k-misc">L</td><td>Toggle combat log</td></tr>
+      <tr><td class="help-key k-move">Click</td><td>Click adjacent hex to move/attack</td></tr>
+    </table>
+    <div class="help-divider"></div>
+    <h3 class="help-heading">Mechanics</h3>
+    <p>⚔ <b>Flanking:</b> +1 dmg when ally on opposite side (enemies flank too!)</p>
+    <p>👻 <b>Ghost:</b> Dead players move freely, buff adjacent allies +1 dmg. Cleric can revive!</p>
+    <p>🛡 <b>Cover hex:</b> -1 incoming damage + regen 1 HP/4 ticks</p>
+    <p>☠ <b>Hazard hex:</b> 1 dmg when entered</p>
+    <p>🔥 <b>Lava hex:</b> 2 dmg + burn when entered (appears enc 3+)</p>
+    <p>🟢 <b>Poison:</b> 1 dmg/tick · ⚡ <b>Stun:</b> Skip action · ❄️ <b>Slow:</b> Can't move</p>
+    <p>🎯 <b>Combo:</b> Multi-hit same enemy = bonus dmg. Combo chains build multiplier!</p>
+    <p>🗡 <b>Rogue backstab:</b> +1 dmg from behind · 🔥 <b>Warrior thorns:</b> 1 dmg to melee attackers</p>
+    <p>💫 <b>Dodge:</b> Shadow Cloak gives 15% passive dodge · 🔥 <b>Berserker:</b> +1 dmg below 50% HP</p>
+    <p>📱 <b>Touch:</b> Swipe to move · Tap hex to move/attack · Use buttons for skills</p>
+    <div class="help-divider"></div>
+    <h3 class="help-heading">Enemies</h3>
+    <p class="help-text">💣 <b>Bomber:</b> Drops hazard tiles, flees · 🗡 <b>Assassin:</b> Invisible, 3 dmg first strike · 🛡 <b>ShieldBearer:</b> Immune from front, flank it · ✦ <b>Summoner:</b> Spawns minions at range · 🐉 <b>Dragon:</b> Breath line + lava · 🗿 <b>Golem:</b> AoE pound, immune to status</p>
+    <h3 class="help-heading spaced">Biomes</h3>
+    <p class="help-text">🏰 <b>Crypt:</b> Classic dungeon · 🌿 <b>Swamp:</b> Poison + hazards · 🌋 <b>Volcano:</b> Lava + fire · 🏛 <b>Ruins:</b> Walls + cover</p>
+    <p class="help-close">Press H to close</p>
+  </div>
+</div>
+<div id="transition-overlay"></div>
+<div id="narrative-overlay"><div class="narr-icon"></div><div class="narr-line"></div><div class="narr-text"></div><div class="narr-sub"></div><div class="narr-line"></div></div>
+<div id="stats-overlay"><div id="stats-box"></div></div>
+
+<script type="module" src="js/host.js?v=4"></script>
+</body>
+</html>

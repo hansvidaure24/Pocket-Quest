@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Pocket Quest — Tutorial</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
+:root{--bg-deep:#0c0a08;--bg-panel:#16130f;--bg-card:#1e1a15;--bg-body:#0f0d0a;--text-1:#eee;--text-2:#888;--text-3:#444;--chrome:#8a7e6e;--border:rgba(140,120,80,0.35);--red:#c45a3c;--green:#7ea879;--purple:#6b8cae;--yellow:#c9973e;--gold:#b8943e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg-body);color:var(--text-1);font-family:'Rajdhani','Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;height:100vh;overflow:hidden;user-select:none;touch-action:none}
+canvas{width:100%;background:#0e0e20;display:block;touch-action:none}
+#ui{flex:1;width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;overflow-y:auto;padding:8px 12px;gap:8px;min-height:0}
+#kb-hint{display:none;text-align:center;font-size:10px;color:var(--text-3);letter-spacing:.5px;padding:2px 8px;width:100%;border-top:1px solid rgba(140,120,80,.08)}
+@media(min-width:700px){
+  body{flex-direction:row;justify-content:center}
+  canvas{width:55%;max-width:700px;height:100vh !important;flex-shrink:0}
+  #ui{max-width:380px;height:100vh;padding:16px 16px}
+  #kb-hint{display:block}
+  #back-link{top:12px;left:12px;font-size:13px}
+}
+#progress{display:flex;gap:6px;padding:4px 0}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--text-3);transition:all .2s}
+.dot.active{background:var(--gold);transform:scale(1.3)}
+.dot.done{background:var(--green)}
+#instruction{text-align:center;font-size:15px;font-weight:600;color:var(--text-1);min-height:40px;line-height:1.4;letter-spacing:.5px}
+#sub-instruction{text-align:center;font-size:11px;color:var(--text-2);min-height:16px;letter-spacing:.5px}
+#actions{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;width:100%}
+.act-btn{padding:12px 0;border-radius:4px;border:1px solid rgba(255,255,255,.1);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;touch-action:manipulation;text-align:center;transition:all .08s;min-height:48px;text-transform:uppercase;letter-spacing:.5px;-webkit-tap-highlight-color:transparent}
+.act-btn:active{transform:scale(.92);filter:brightness(.8)}
+.act-btn.disabled{opacity:.2;pointer-events:none}
+.act-btn.pulse{animation:btnPulse 1s ease-in-out infinite}
+@keyframes btnPulse{0%,100%{box-shadow:0 0 4px rgba(255,255,255,.1)}50%{box-shadow:0 0 16px rgba(184,148,62,.5)}}
+#next-btn,#start-btn,.link-btn{background:linear-gradient(180deg,#a37a30,#7a5e25);color:#fff;border:1px solid rgba(184,148,62,.4);padding:14px 32px;border-radius:4px;font:700 16px Rajdhani,sans-serif;letter-spacing:2px;text-transform:uppercase;cursor:pointer;touch-action:manipulation;transition:all .12s;text-decoration:none;display:inline-block;text-align:center;-webkit-tap-highlight-color:transparent}
+#next-btn:active,#start-btn:active,.link-btn:active{transform:scale(.95)}
+#next-btn{display:none}
+#class-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.class-card{background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:12px 8px;text-align:center;cursor:pointer;touch-action:manipulation;transition:all .15s}
+.class-card:active{transform:scale(.95)}
+.class-card.selected{border-color:var(--gold);transform:scale(1.03)}
+.class-card .icon{font-size:22px}
+.class-card .name{font-size:14px;font-weight:700;margin-top:2px}
+.class-card .meta{font-size:10px;color:var(--text-3);margin-top:2px}
+#complete{display:none;flex-direction:column;align-items:center;gap:12px;text-align:center;width:100%}
+#complete h2{font-size:24px;color:var(--green);letter-spacing:3px;text-transform:uppercase}
+.summary{background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:16px;width:100%;text-align:left;font-size:13px;line-height:1.8}
+.summary .row{display:flex;justify-content:space-between;border-bottom:1px solid rgba(140,120,80,.1);padding:2px 0}
+.summary .val{color:var(--gold);font-weight:700}
+#class-info{background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;padding:12px;width:100%;font-size:12px;line-height:1.6;display:none}
+#class-info .ci-row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(140,120,80,.08)}
+#class-info .ci-label{color:var(--chrome)}
+#class-info .ci-val{color:var(--gold);font-weight:700;text-align:right}
+#class-info .ci-loadout{background:var(--bg-deep);border:1px solid rgba(140,120,80,.15);border-radius:4px;padding:6px 8px;margin-top:4px;font-size:11px}
+#class-info .ci-loadout b{color:var(--text-1)}
+#class-info .ci-tips{color:var(--text-2);font-size:11px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(140,120,80,.1);font-style:italic}
+#back-link{position:fixed;top:8px;left:8px;color:var(--chrome);font-size:12px;text-decoration:none;letter-spacing:1px;z-index:10;padding:4px 8px}
+</style>
+</head>
+<body>
+<a id="back-link" href="index.html">← BACK</a>
+<canvas id="c"></canvas>
+<div id="ui">
+  <div id="progress"></div>
+  <div id="instruction"></div>
+  <div id="sub-instruction"></div>
+  <div id="class-grid"></div>
+  <div id="class-info"></div>
+  <div id="actions" style="display:none">
+    <div class="act-btn" style="background:linear-gradient(180deg,#a3472e,#7a3522);color:#fff;border-color:rgba(196,90,60,.4)" data-a="attack">⚔<br><span style="font-size:10px">ATK</span></div>
+    <div class="act-btn" style="background:linear-gradient(180deg,#4a6e8a,#3a5570);color:#fff;border-color:rgba(107,140,174,.4)" data-a="skill" id="skill-btn">✦<br><span style="font-size:10px">SKILL</span></div>
+    <div class="act-btn" style="background:linear-gradient(180deg,#3366aa,#224488);color:#fff;border-color:rgba(107,140,174,.4)" data-a="defend">🛡<br><span style="font-size:10px">DEF</span></div>
+    <div class="act-btn" style="background:linear-gradient(180deg,#b8860b,#7a6830);color:#fff;border-color:rgba(184,148,62,.4)" data-a="item">📦<br><span style="font-size:10px">ITEM</span></div>
+  </div>
+  <button id="next-btn">NEXT</button>
+  <div id="kb-hint"></div>
+  <button id="start-btn" style="display:none">START TUTORIAL</button>
+  <div id="complete">
+    <h2>You're Ready!</h2>
+    <div class="summary" id="summary"></div>
+    <div id="mechanics-ref" class="summary" style="display:none">
+      <div style="text-align:center;margin-bottom:6px"><b style="color:#b8943e;font-size:14px;letter-spacing:1px">GAME MECHANICS</b></div>
+      <div style="color:#c45a3c;font-weight:700;font-size:11px;margin-top:6px;letter-spacing:.5px">⚔ COMBAT</div>
+      <div class="row"><span>ATK Range</span><span class="val">1 hex (adjacent)</span></div>
+      <div class="row"><span>Base Damage</span><span class="val">1 + bonuses</span></div>
+      <div class="row"><span>Flanking</span><span class="val">+1 dmg (ally on opposite side)</span></div>
+      <div class="row"><span>Backstab (Rogue)</span><span class="val">+1 dmg from behind</span></div>
+      <div class="row"><span>Crit Chance</span><span class="val">15% → +1 dmg</span></div>
+      <div class="row"><span>Combo</span><span class="val">2+ players hit same enemy = bonus</span></div>
+      <div class="row"><span>Sync Bonus</span><span class="val">All players act same tick → +1 dmg</span></div>
+      <div style="color:#3366aa;font-weight:700;font-size:11px;margin-top:8px;letter-spacing:.5px">🛡 DEFENSE</div>
+      <div class="row"><span>DEF</span><span class="val">Halves incoming dmg (min 1)</span></div>
+      <div class="row"><span>Cover Hex</span><span class="val">-1 incoming dmg while standing on it</span></div>
+      <div class="row"><span>Dodge (Smoke / Cloak)</span><span class="val">Completely avoids one hit</span></div>
+      <div style="color:#c9973e;font-weight:700;font-size:11px;margin-top:8px;letter-spacing:.5px">⏱ COOLDOWNS</div>
+      <div class="row"><span>Warrior Cleave</span><span class="val">3 ticks</span></div>
+      <div class="row"><span>Mage Fireball</span><span class="val">3 ticks</span></div>
+      <div class="row"><span>Rogue Dash</span><span class="val">2 ticks</span></div>
+      <div class="row"><span>Cleric Heal</span><span class="val">2 ticks</span></div>
+      <div style="color:#b8943e;font-weight:700;font-size:11px;margin-top:8px;letter-spacing:.5px">📦 ITEMS (one-use, 35% drop from enemies)</div>
+      <div class="row"><span>💣 Bomb</span><span class="val">2 dmg AoE, 2 hex range</span></div>
+      <div class="row"><span>🧪 Potion</span><span class="val">Full heal</span></div>
+      <div class="row"><span>💨 Smoke</span><span class="val">All players dodge next hit</span></div>
+      <div class="row"><span>📜 Shield Scroll</span><span class="val">+2 max HP permanently</span></div>
+      <div class="row"><span>⚡ Stun Trap</span><span class="val">Stun all adjacent enemies</span></div>
+      <div class="row"><span>❄️ Frost Bomb</span><span class="val">Slow enemies in 2 hex</span></div>
+      <div class="row"><span>📯 War Horn</span><span class="val">Stun ALL enemies</span></div>
+      <div class="row"><span>🛡 Shield Bash</span><span class="val">Push + stun adjacent</span></div>
+      <div class="row"><span>⏩ Tempo Shift</span><span class="val">3 ticks at double speed</span></div>
+      <div style="color:#5a9a60;font-weight:700;font-size:11px;margin-top:8px;letter-spacing:.5px">💀 STATUS EFFECTS</div>
+      <div class="row"><span>🟢 Poison</span><span class="val">1 dmg per tick</span></div>
+      <div class="row"><span>⚡ Stun</span><span class="val">Skip action</span></div>
+      <div class="row"><span>❄ Slow</span><span class="val">Cannot move</span></div>
+      <div class="row"><span>🔥 Burn</span><span class="val">From lava: 2 dmg + poison</span></div>
+      <div style="color:#6b8cae;font-weight:700;font-size:11px;margin-top:8px;letter-spacing:.5px">🗺 TERRAIN</div>
+      <div class="row"><span>▪ Wall</span><span class="val">Impassable</span></div>
+      <div class="row"><span>☠ Hazard</span><span class="val">1 dmg when entered</span></div>
+      <div class="row"><span>🛡 Cover</span><span class="val">-1 incoming dmg + slow regen</span></div>
+      <div class="row"><span>🔥 Lava</span><span class="val">2 dmg + burn on entry</span></div>
+      <div style="color:#888;font-weight:700;font-size:11px;margin-top:8px;letter-spacing:.5px">📈 PROGRESSION</div>
+      <div class="row"><span>XP</span><span class="val">1 per kill, 5 per boss</span></div>
+      <div class="row"><span>Level Up</span><span class="val">+1 max HP to all alive players</span></div>
+      <div class="row"><span>Upgrades</span><span class="val">Pick 1 of 3 between encounters</span></div>
+      <div class="row"><span>Ghost (death)</span><span class="val">Move freely, buff allies +1 dmg</span></div>
+    </div>
+    <a class="link-btn" href="controller.html" style="width:100%">JOIN A GAME</a>
+    <button class="link-btn" id="retry-btn" style="width:100%;background:linear-gradient(180deg,#3a3020,#2a2015)">TRY ANOTHER CLASS</button>
+  </div>
+</div>
+<script>
+const C=document.getElementById('c'),X=C.getContext('2d');
+const S3=Math.sqrt(3);
+let W,H,HEX;
+const isDesktop=window.matchMedia('(min-width:700px)').matches;
+function resize(){
+  const r=devicePixelRatio||1;
+  W=C.clientWidth;
+  H=isDesktop?C.clientHeight:Math.min(window.innerHeight*.55,360);
+  if(!isDesktop)C.style.height=H+'px';
+  C.width=W*r;C.height=H*r;X.setTransform(r,0,0,r,0,0);
+  HEX=Math.min(W,H)/8;
+}
+resize();window.addEventListener('resize',resize);requestAnimationFrame(resize);
+
+const CLASSES=[
+  {name:'Warrior',hp:6,color:'#c45a3c',icon:'⚔',ability:'Cleave',cd:3,desc:'Tank — Cleave hits all adjacent enemies',
+    skillDesc:'Cleave all adjacent enemies and push them back!',range:'1 hex (all adjacent)',
+    loadouts:[{name:'Heavy Axe',desc:'+1 base damage to all attacks'},{name:'Shield Wall',desc:'+2 max HP, auto-defend every 4 ticks'}],
+    tips:'High HP, hits everything around you. Stand in the middle of enemies and Cleave. Shield Wall lets you tank hits without pressing DEF.'},
+  {name:'Mage',hp:4,color:'#6b8cae',icon:'✦',ability:'Fireball',cd:3,desc:'AoE — Fireball burns groups',
+    skillDesc:'Fireball hits all enemies within 2 hexes!',range:'2 hex radius',
+    loadouts:[{name:'Staff of Power',desc:'+1 Fireball damage'},{name:'Barrier Tome',desc:'Free Shield Scroll + auto-barrier every 6 ticks'}],
+    tips:'Low HP but massive AoE. Stay 2 hexes away from enemies and Fireball clusters. Barrier Tome helps you survive.'},
+  {name:'Rogue',hp:4,color:'#7ea879',icon:'🗡',ability:'Dash',cd:2,desc:'Striker — Dash through enemies',
+    skillDesc:'Dash 3 hexes in a line and strike the first enemy for 2 damage!',range:'3 hex line',
+    loadouts:[{name:'Twin Daggers',desc:'10% chance to hit twice'},{name:'Shadow Cloak',desc:'15% dodge chance + dodge first hit'}],
+    tips:'Fast cooldown, high burst. Dash in, attack, dash out. Backstab (+1 dmg from behind). Shadow Cloak keeps you alive.'},
+  {name:'Cleric',hp:5,color:'#c9973e',icon:'✚',ability:'Heal',cd:2,desc:'Support — Heal and revive allies',
+    skillDesc:'Heal an adjacent ally for 2 HP — or revive a ghost!',range:'1 hex (adjacent ally)',
+    loadouts:[{name:'Battle Mace',desc:'+1 damage, heal 1 HP on kill'},{name:'Holy Symbol',desc:'Aura heals adjacent allies every 3 ticks'}],
+    tips:'The glue that keeps the party alive. Stay adjacent to hurt allies. Reviving ghosts is huge — prioritize it. Battle Mace lets you fight too.'},
+];
+
+let cls=0,step=-1,moveCount=0,stepDone=false;
+let player={q:0,r:0},entities=[],effects=[],tick=0;
+const STEPS=['class','move','attack','defend','skill','item','complete'];
+
+function h2p(q,r){return{x:HEX*(S3*q+S3/2*r)+W/2,y:HEX*1.5*r+H/2};}
+function hDist(a,b){return(Math.abs(a.q-b.q)+Math.abs(a.q+a.r-b.q-b.r)+Math.abs(a.r-b.r))/2;}
+function hNbrs(q,r){return[{q:q+1,r},{q:q-1,r},{q,r:r+1},{q,r:r-1},{q:q+1,r:r-1},{q:q-1,r:r+1}];}
+
+function drawHex(cx,cy,sz,fill,stroke){
+  X.beginPath();
+  for(let i=0;i<6;i++){const a=Math.PI/3*i-Math.PI/6;X.lineTo(cx+sz*Math.cos(a),cy+sz*Math.sin(a));}
+  X.closePath();
+  if(fill){X.fillStyle=fill;X.fill();}
+  if(stroke){X.strokeStyle=stroke;X.lineWidth=1;X.stroke();}
+}
+
+function drawGrid(){
+  for(let q=-4;q<=4;q++)for(let r=-4;r<=4;r++){
+    if(Math.abs(q+r)>4)continue;
+    const{x,y}=h2p(q,r);
+    const alt=(q+r+100)%2;
+    drawHex(x,y,HEX-1,alt?'#131530':'#10122a','rgba(60,40,120,0.25)');
+  }
+}
+
+function hexesInRange(cq,cr,range){
+  const out=[];
+  for(let q=-range;q<=range;q++)for(let r=-range;r<=range;r++){
+    if(Math.abs(q+r)>range)continue;
+    if(q===0&&r===0)continue;
+    const tq=cq+q,tr=cr+r;
+    if(hDist({q:tq,r:tr},{q:0,r:0})<=4)out.push({q:tq,r:tr});
+  }
+  return out;
+}
+function skillRange(){
+  if(cls===0)return 1; // Cleave: adjacent
+  if(cls===1)return 2; // Fireball: 2-hex radius
+  if(cls===2)return 3; // Dash: 3-hex line
+  return 1;            // Heal: adjacent
+}
+function drawHighlights(){
+  const s=STEPS[step];
+  if(s==='move'&&!stepDone){
+    const keyMap={'-1,0':'A','1,0':'D','0,-1':'W','0,1':'S','-1,1':'S+A','1,-1':'W+D'};
+    hNbrs(player.q,player.r).forEach(n=>{
+      if(hDist(n,{q:0,r:0})>4)return;
+      const{x,y}=h2p(n.q,n.r);
+      drawHex(x,y,HEX-2,'rgba(184,148,62,0.15)','rgba(184,148,62,0.4)');
+      if(isDesktop){
+        const dq=n.q-player.q,dr=n.r-player.r;
+        const key=keyMap[dq+','+dr];
+        if(key){
+          X.fillStyle='rgba(184,148,62,0.6)';X.font='bold 11px Rajdhani';X.textAlign='center';X.textBaseline='middle';
+          X.fillText(key,x,y);
+        }
+      }
+    });
+  }
+  // ATK range: always 1 (adjacent)
+  if(s==='attack'&&!stepDone){
+    hNbrs(player.q,player.r).forEach(n=>{
+      if(hDist(n,{q:0,r:0})>4)return;
+      const{x,y}=h2p(n.q,n.r);
+      const hasEnemy=entities.some(e=>e.hp>0&&e.q===n.q&&e.r===n.r);
+      drawHex(x,y,HEX-2,hasEnemy?'rgba(196,90,60,0.2)':'rgba(196,90,60,0.08)',hasEnemy?'rgba(196,90,60,0.6)':'rgba(196,90,60,0.2)');
+    });
+    // range label
+    const{x,y}=h2p(player.q,player.r);
+    X.fillStyle='rgba(196,90,60,0.5)';X.font='bold 9px Rajdhani';X.textAlign='center';
+    X.fillText('ATK RANGE: 1 HEX',x,y+HEX*0.75);
+  }
+  // SKILL range (class-specific)
+  if(s==='skill'&&!stepDone){
+    const sr=skillRange();
+    if(cls===2){
+      // Rogue Dash: show a 3-hex line in each direction
+      const dirs=[{dq:1,dr:0},{dq:1,dr:-1},{dq:0,dr:-1},{dq:-1,dr:0},{dq:-1,dr:1},{dq:0,dr:1}];
+      dirs.forEach(d=>{
+        for(let i=1;i<=3;i++){
+          const tq=player.q+d.dq*i,tr=player.r+d.dr*i;
+          if(hDist({q:tq,r:tr},{q:0,r:0})>4)break;
+          const{x,y}=h2p(tq,tr);
+          const hasTarget=entities.some(e=>e.hp>0&&e.q===tq&&e.r===tr);
+          drawHex(x,y,HEX-2,hasTarget?'rgba(126,168,121,0.25)':'rgba(126,168,121,0.06)',hasTarget?'rgba(126,168,121,0.6)':'rgba(126,168,121,0.15)');
+        }
+      });
+    }else{
+      hexesInRange(player.q,player.r,sr).forEach(n=>{
+        const{x,y}=h2p(n.q,n.r);
+        const hasTarget=entities.some(e=>e.hp>0&&e.q===n.q&&e.r===n.r);
+        const col=CLASSES[cls].color;
+        drawHex(x,y,HEX-2,hasTarget?col+'33':col+'0d',hasTarget?col+'99':col+'25');
+      });
+    }
+    const{x,y}=h2p(player.q,player.r);
+    const labels=['CLEAVE: 1 HEX (ALL ADJACENT)','FIREBALL: 2 HEX RADIUS','DASH: 3 HEX LINE','HEAL: 1 HEX (ADJACENT ALLY)'];
+    X.fillStyle=CLASSES[cls].color+'88';X.font='bold 9px Rajdhani';X.textAlign='center';
+    X.fillText(labels[cls],x,y+HEX*0.75);
+  }
+  // ITEM range (bomb = 2 hex)
+  if(s==='item'&&!stepDone){
+    hexesInRange(player.q,player.r,2).forEach(n=>{
+      const{x,y}=h2p(n.q,n.r);
+      const hasEnemy=entities.some(e=>e.hp>0&&e.q===n.q&&e.r===n.r);
+      drawHex(x,y,HEX-2,hasEnemy?'rgba(196,80,80,0.2)':'rgba(196,80,80,0.06)',hasEnemy?'rgba(196,80,80,0.5)':'rgba(196,80,80,0.15)');
+    });
+    const{x,y}=h2p(player.q,player.r);
+    X.fillStyle='rgba(196,80,80,0.5)';X.font='bold 9px Rajdhani';X.textAlign='center';
+    X.fillText('BOMB RANGE: 2 HEX',x,y+HEX*0.75);
+  }
+}
+
+function drawToken(q,r,color,icon,bob,hp,maxHp){
+  const{x,y}=h2p(q,r);
+  const by=bob?Math.sin(tick*0.05)*2:0;
+  X.fillStyle=color;X.globalAlpha=0.3;
+  X.beginPath();X.arc(x,y+by,HEX*0.45,0,Math.PI*2);X.fill();
+  X.globalAlpha=1;X.fillStyle=color;
+  X.beginPath();X.arc(x,y+by,HEX*0.38,0,Math.PI*2);X.fill();
+  X.fillStyle='#fff';X.font=`${HEX*0.35}px Rajdhani`;X.textAlign='center';X.textBaseline='middle';
+  X.fillText(icon,x,y+by+1);
+  if(hp!=null&&maxHp!=null){
+    const bw=HEX*0.6,bh=4,bx=x-bw/2,by2=y+by+HEX*0.5;
+    X.fillStyle='#110f0b';X.fillRect(bx,by2,bw,bh);
+    X.fillStyle=hp/maxHp>0.5?'#7ea879':hp/maxHp>0.25?'#c49040':'#c44040';
+    X.fillRect(bx,by2,bw*(hp/maxHp),bh);
+  }
+}
+
+function drawEffects(){
+  effects=effects.filter(e=>{
+    e.life--;
+    if(e.type==='dmg'){
+      const{x,y}=h2p(e.q,e.r);
+      const prog=1-e.life/e.maxLife;
+      X.globalAlpha=1-prog;
+      X.fillStyle=e.color;X.font='bold 16px Rajdhani';X.textAlign='center';
+      X.fillText(e.text,x,y-20-prog*30);
+      X.globalAlpha=1;
+    }else if(e.type==='aoe'){
+      const{x,y}=h2p(e.q,e.r);
+      const prog=1-e.life/e.maxLife;
+      X.globalAlpha=(1-prog)*0.3;
+      X.fillStyle=e.color;X.beginPath();X.arc(x,y,e.radius*prog*1.5,0,Math.PI*2);X.fill();
+      X.globalAlpha=1;
+    }else if(e.type==='dash'){
+      const prog=1-e.life/e.maxLife;
+      X.globalAlpha=(1-prog)*0.5;X.strokeStyle=e.color;X.lineWidth=HEX*0.3;X.lineCap='round';
+      X.beginPath();
+      const a=h2p(e.fromQ,e.fromR),b=h2p(e.toQ,e.toR);
+      X.moveTo(a.x,a.y);X.lineTo(a.x+(b.x-a.x)*Math.min(prog*2,1),a.y+(b.y-a.y)*Math.min(prog*2,1));
+      X.stroke();X.globalAlpha=1;
+    }
+    return e.life>0;
+  });
+}
+
+function spawnDmg(q,r,text,color){effects.push({type:'dmg',q,r,text,color,life:40,maxLife:40});}
+function spawnAoe(q,r,color,radius){effects.push({type:'aoe',q,r,color,radius:radius||HEX*2,life:25,maxLife:25});}
+
+function render(){
+  tick++;X.clearRect(0,0,W,H);
+  const bg=X.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.7);
+  bg.addColorStop(0,'#0e0e20');bg.addColorStop(1,'#060610');
+  X.fillStyle=bg;X.fillRect(0,0,W,H);
+  drawGrid();drawHighlights();
+  entities.forEach(e=>{if(e.hp>0)drawToken(e.q,e.r,e.color,e.icon,true,e.hp,e.maxHp);});
+  if(step>=1&&step<=5)drawToken(player.q,player.r,CLASSES[cls].color,CLASSES[cls].icon,true,player.hp,player.maxHp);
+  drawEffects();
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+
+function setInstruction(text,sub){
+  document.getElementById('instruction').textContent=text;
+  document.getElementById('sub-instruction').textContent=sub||'';
+}
+function showNext(){stepDone=true;document.getElementById('next-btn').style.display='inline-block';}
+function hideNext(){stepDone=false;document.getElementById('next-btn').style.display='none';}
+function setActions(show,enabled){
+  document.getElementById('actions').style.display=show?'grid':'none';
+  document.querySelectorAll('.act-btn').forEach(b=>{
+    b.classList.toggle('disabled',!enabled.includes(b.dataset.a));
+    b.classList.toggle('pulse',enabled.includes(b.dataset.a));
+  });
+}
+function buildProgress(){
+  const el=document.getElementById('progress');
+  el.innerHTML=STEPS.slice(1,6).map((_,i)=>`<div class="dot${i+1<step?' done':''}${i+1===step?' active':''}"></div>`).join('');
+}
+
+function goStep(s){
+  step=s;entities=[];effects=[];stepDone=false;moveCount=0;
+  player={q:0,r:0,hp:CLASSES[cls].hp,maxHp:CLASSES[cls].hp};
+  hideNext();buildProgress();
+  document.getElementById('class-grid').style.display='none';
+  document.getElementById('class-info').style.display='none';
+  document.getElementById('start-btn').style.display='none';
+  document.getElementById('complete').style.display='none';
+  document.getElementById('mechanics-ref').style.display='none';
+  const c=CLASSES[cls];
+  const sb=document.getElementById('skill-btn');
+  sb.innerHTML=`✦<br><span style="font-size:10px">${c.ability}</span>`;
+
+  const mob=!isDesktop;
+  if(s===0){
+    document.getElementById('class-grid').style.display='grid';
+    setActions(false,[]);
+    setInstruction('Choose Your Class',mob?'Tap a class, then tap START':'Press 1-4 to pick a class, then Enter to start');
+    document.getElementById('start-btn').style.display='inline-block';
+    buildClassGrid();
+  }else if(s===1){
+    setActions(false,[]);
+    setInstruction('Move around the hex grid',mob?'Swipe on the board or tap a highlighted hex — move 3 times':'WASD to move (hold two for diagonals) — move 3 times');
+  }else if(s===2){
+    entities.push({q:1,r:0,hp:3,maxHp:3,color:'#d47a3c',icon:'☠',name:'Dummy'});
+    setActions(true,['attack']);
+    setInstruction('An enemy is adjacent!',mob?'Tap ATK to attack (1 dmg to nearest adjacent enemy)':'Press Space to attack (1 dmg to nearest adjacent enemy)');
+  }else if(s===3){
+    entities.push({q:1,r:-1,hp:4,maxHp:4,color:'#d47a3c',icon:'☠',name:'Brute'});
+    player.hp=player.maxHp;
+    setActions(true,['defend']);
+    setInstruction('An enemy is winding up!',mob?'Tap DEF to halve incoming damage':'Press G to defend — halves incoming damage');
+    document.getElementById('sub-instruction').textContent='The enemy will attack in 2 seconds...';
+    setTimeout(()=>{
+      if(step!==3)return;
+      const e=entities[0];if(!e||e.hp<=0)return;
+      const raw=2;
+      const dmg=player.defending?Math.max(1,Math.floor(raw/2)):raw;
+      player.hp=Math.max(0,player.hp-dmg);
+      spawnDmg(player.q,player.r,'-'+dmg,player.defending?'#6b8cae':'#c45a3c');
+      if(player.defending){
+        spawnAoe(player.q,player.r,'#6b8cae',HEX*1.5);
+        setInstruction('Blocked! DEF halved 2 damage to '+dmg,'In the real game, defend each tick you expect to be hit');
+      }else{
+        setInstruction('Ouch! You took '+dmg+' damage unblocked','Next time, tap DEF before the enemy strikes');
+      }
+      player.defending=false;
+      showNext();
+    },2000);
+  }else if(s===4){
+    setActions(true,['skill']);
+    const skillHint=mob?'Tap SKILL':'Press F';
+    if(cls===0){
+      [{q:1,r:0},{q:-1,r:1},{q:0,r:-1}].forEach(p=>entities.push({q:p.q,r:p.r,hp:2,maxHp:2,color:'#d47a3c',icon:'☠'}));
+      setInstruction(skillHint+' to Cleave!','Hits and pushes ALL adjacent enemies');
+    }else if(cls===1){
+      [{q:2,r:-1},{q:2,r:0},{q:1,r:1}].forEach(p=>entities.push({q:p.q,r:p.r,hp:2,maxHp:2,color:'#d47a3c',icon:'☠'}));
+      setInstruction(skillHint+' to Fireball!','Hits all enemies within 2 hexes + poisons');
+    }else if(cls===2){
+      entities.push({q:3,r:0,hp:3,maxHp:3,color:'#d47a3c',icon:'☠'});
+      setInstruction(skillHint+' to Dash!','Dash 3 hexes and strike the first enemy');
+    }else{
+      entities.push({q:1,r:0,hp:1,maxHp:5,color:'#6b8cae',icon:'♥',name:'Ally',isAlly:true});
+      setInstruction(skillHint+' to Heal!','Heals an adjacent ally for 2 HP');
+    }
+  }else if(s===5){
+    player.item='Bomb';
+    [{q:1,r:1},{q:2,r:0},{q:0,r:2}].forEach(p=>entities.push({q:p.q,r:p.r,hp:2,maxHp:2,color:'#d47a3c',icon:'☠'}));
+    setActions(true,['item']);
+    setInstruction('You found a Bomb!',mob?'Tap ITEM to use it — 2 dmg to all enemies within 2 hexes':'Press 1 to use it — 2 dmg to all enemies within 2 hexes');
+  }else if(s===6){
+    setActions(false,[]);
+    document.getElementById('progress').innerHTML='';
+    document.getElementById('complete').style.display='flex';
+    const c=CLASSES[cls];
+    document.getElementById('summary').innerHTML=`
+      <div style="text-align:center;margin-bottom:8px"><span style="font-size:22px">${c.icon}</span> <span style="color:${c.color};font-weight:900;font-size:18px">${c.name}</span></div>
+      <div class="row"><span>HP</span><span class="val">${c.hp}</span></div>
+      <div class="row"><span>Ability</span><span class="val">${c.ability} (CD: ${c.cd})</span></div>
+      <div class="row"><span>Skill Range</span><span class="val">${c.range}</span></div>
+      <div class="row"><span>Role</span><span class="val">${c.desc.split('—')[0].trim()}</span></div>
+      ${c.loadouts.map(l=>`<div class="row"><span style="color:#6b8cae">${l.name}</span><span style="color:#888;font-size:11px">${l.desc}</span></div>`).join('')}
+      <div style="margin-top:8px;font-size:11px;color:#888;text-align:center">
+        <b style="color:#b8943e">Controls</b><br>
+        Swipe = Move · ATK = Hit adjacent · DEF = Half damage<br>
+        SKILL = ${c.ability} · ITEM = Use consumable<br>
+        Keyboard: WASD move (combos for diagonals) · Space ATK · F Skill · G DEF · 1 Item
+      </div>`;
+    document.getElementById('mechanics-ref').style.display='block';
+    setInstruction('');
+  }
+  updateKbHint();
+}
+
+function buildClassGrid(){
+  const el=document.getElementById('class-grid');
+  el.innerHTML=CLASSES.map((c,i)=>`
+    <div class="class-card${i===cls?' selected':''}" data-i="${i}">
+      <div class="icon">${c.icon}</div>
+      <div class="name" style="color:${c.color}">${c.name}</div>
+      <div class="meta">♥${c.hp} · ${c.ability}</div>
+      <div class="meta">${c.desc}</div>
+    </div>`).join('');
+  el.querySelectorAll('.class-card').forEach(d=>d.addEventListener('click',()=>{
+    cls=parseInt(d.dataset.i);buildClassGrid();
+  }));
+  buildClassInfo();
+}
+function buildClassInfo(){
+  const c=CLASSES[cls],el=document.getElementById('class-info');
+  el.style.display='block';
+  el.innerHTML=`
+    <div style="text-align:center;margin-bottom:6px"><span style="font-size:18px">${c.icon}</span> <span style="color:${c.color};font-weight:900;font-size:16px">${c.name}</span></div>
+    <div class="ci-row"><span class="ci-label">HP</span><span class="ci-val">${c.hp}</span></div>
+    <div class="ci-row"><span class="ci-label">Ability</span><span class="ci-val">${c.ability}</span></div>
+    <div class="ci-row"><span class="ci-label">Cooldown</span><span class="ci-val">${c.cd} ticks</span></div>
+    <div class="ci-row"><span class="ci-label">Skill Range</span><span class="ci-val">${c.range}</span></div>
+    <div style="font-size:10px;color:var(--chrome);margin-top:8px;letter-spacing:.5px;text-transform:uppercase">Loadouts (pick one in lobby)</div>
+    ${c.loadouts.map(l=>`<div class="ci-loadout"><b>${l.name}</b> — ${l.desc}</div>`).join('')}
+    <div class="ci-tips">💡 ${c.tips}</div>`;
+}
+
+document.getElementById('start-btn').addEventListener('click',()=>goStep(1));
+document.getElementById('next-btn').addEventListener('click',()=>goStep(step+1));
+document.getElementById('retry-btn').addEventListener('click',()=>goStep(0));
+
+// swipe on canvas
+let swipeStart=null;
+C.addEventListener('touchstart',e=>{e.preventDefault();swipeStart={x:e.touches[0].clientX,y:e.touches[0].clientY};},{passive:false});
+C.addEventListener('touchend',e=>{
+  e.preventDefault();if(!swipeStart)return;
+  const t=e.changedTouches[0],dx=t.clientX-swipeStart.x,dy=t.clientY-swipeStart.y;
+  swipeStart=null;if(Math.sqrt(dx*dx+dy*dy)<15)return;
+  const ang=Math.atan2(dy,dx);
+  const dirs=[{dq:1,dr:0,a:0},{dq:1,dr:-1,a:-Math.PI/3},{dq:0,dr:-1,a:-2*Math.PI/3},{dq:-1,dr:0,a:Math.PI},{dq:-1,dr:1,a:2*Math.PI/3},{dq:0,dr:1,a:Math.PI/3}];
+  let best=dirs[0],bd=99;
+  dirs.forEach(d=>{let diff=Math.abs(ang-d.a);if(diff>Math.PI)diff=2*Math.PI-diff;if(diff<bd){bd=diff;best=d;}});
+  doMove(best.dq,best.dr);
+},{passive:false});
+
+// tap on highlighted hex
+C.addEventListener('click',e=>{
+  if(STEPS[step]!=='move'||stepDone)return;
+  const rect=C.getBoundingClientRect();
+  const px=(e.clientX-rect.left),py=(e.clientY-rect.top);
+  const nbrs=hNbrs(player.q,player.r);
+  for(const n of nbrs){
+    if(hDist(n,{q:0,r:0})>4)continue;
+    const{x,y}=h2p(n.q,n.r);
+    if(Math.sqrt((px-x)**2+(py-y)**2)<HEX*0.5){doMove(n.q-player.q,n.r-player.r);return;}
+  }
+});
+
+// keyboard: WASD with combos for diagonals
+const _held=new Set();
+function _heldDir(){
+  const w=_held.has('KeyW'),a=_held.has('KeyA'),s=_held.has('KeyS'),d=_held.has('KeyD');
+  if(w&&d)return{dq:1,dr:-1};
+  if(s&&a)return{dq:-1,dr:1};
+  if(w&&a)return{dq:-1,dr:0};
+  if(s&&d)return{dq:1,dr:0};
+  if(w)return{dq:0,dr:-1};
+  if(s)return{dq:0,dr:1};
+  if(a)return{dq:-1,dr:0};
+  if(d)return{dq:1,dr:0};
+  return null;
+}
+document.addEventListener('keyup',e=>{_held.delete(e.code);});
+window.addEventListener('blur',()=>{_held.clear();});
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey||e.metaKey)return;
+  // Enter or N = advance (NEXT / START)
+  if(e.code==='Enter'||e.code==='KeyN'){
+    e.preventDefault();
+    if(step===0){document.getElementById('start-btn').click();return;}
+    if(step===6){window.location.href='controller.html';return;}
+    if(stepDone){document.getElementById('next-btn').click();return;}
+    return;
+  }
+  // Escape = back to index
+  if(e.code==='Escape'){window.location.href='index.html';return;}
+  // Class select: 1-4
+  if(step===0&&'Digit1 Digit2 Digit3 Digit4'.includes(e.code)){
+    cls=parseInt(e.code[5])-1;buildClassGrid();e.preventDefault();return;
+  }
+  // Movement: WASD with combos for diagonals, plus arrow keys
+  if(e.code==='KeyW'||e.code==='KeyA'||e.code==='KeyS'||e.code==='KeyD'){
+    _held.add(e.code);const dir=_heldDir();
+    if(dir)doMove(dir.dq,dir.dr);e.preventDefault();return;
+  }
+  const arrowDirs={ArrowUp:{dq:0,dr:-1},ArrowDown:{dq:0,dr:1},ArrowLeft:{dq:-1,dr:0},ArrowRight:{dq:1,dr:0}};
+  if(arrowDirs[e.code]){doMove(arrowDirs[e.code].dq,arrowDirs[e.code].dr);e.preventDefault();return;}
+  // Actions
+  if(e.code==='Space'){doAction('attack');e.preventDefault();}
+  if(e.code==='KeyF'){doAction('skill');e.preventDefault();}
+  if(e.code==='KeyG'){doAction('defend');e.preventDefault();}
+  if(e.code==='Digit1'&&step!==0){doAction('item');e.preventDefault();}
+});
+function updateKbHint(){
+  const el=document.getElementById('kb-hint');
+  if(!isDesktop){el.style.display='none';return;}
+  const s=STEPS[step];
+  const hints={
+    'class':'1-4 Pick class · Enter Start · Esc Back',
+    'move':'W/A/S/D Move (combos for diagonals) · Enter Next · Esc Back',
+    'attack':'Space Attack · Enter Next · Esc Back',
+    'defend':'G Defend · Enter Next · Esc Back',
+    'skill':'F Skill · Enter Next · Esc Back',
+    'item':'1 Use Item · Enter Next · Esc Back',
+    'complete':'Enter Join Game · Esc Back',
+  };
+  el.textContent=hints[s]||'';
+}
+
+function doMove(dq,dr){
+  if(STEPS[step]!=='move'||stepDone)return;
+  const nq=player.q+dq,nr=player.r+dr;
+  if(hDist({q:nq,r:nr},{q:0,r:0})>4)return;
+  player.q=nq;player.r=nr;moveCount++;
+  if(moveCount>=3){
+    setInstruction('Great! You move one hex per tick.',isDesktop?'Each tick you pick one action: move, attack, defend, skill, or item. Press Enter to continue.':'Each tick you pick one action: move, attack, defend, skill, or item');
+    showNext();
+  }else{
+    document.getElementById('sub-instruction').textContent=`${3-moveCount} more move${3-moveCount>1?'s':''}...`;
+  }
+}
+
+document.getElementById('actions').addEventListener('click',e=>{
+  const btn=e.target.closest('.act-btn');
+  if(!btn||btn.classList.contains('disabled'))return;
+  doAction(btn.dataset.a);
+});
+
+function doAction(a){
+  if(a==='attack'&&STEPS[step]==='attack'){
+    const e=entities.find(t=>t.hp>0&&hDist(t,player)===1);
+    if(!e)return;
+    e.hp=Math.max(0,e.hp-1);
+    spawnDmg(e.q,e.r,'-1','#c45a3c');
+    if(e.hp<=0){
+      setInstruction('Enemy defeated!','Flanking bonus: +1 dmg when an ally is on the enemy\'s opposite side');
+      showNext();
+    }else{
+      document.getElementById('sub-instruction').textContent=e.hp+' HP remaining — hit again!';
+    }
+  }else if(a==='defend'&&STEPS[step]==='defend'){
+    player.defending=true;
+    spawnAoe(player.q,player.r,'#3366aa',HEX);
+    document.getElementById('sub-instruction').textContent='Shield up! Waiting for the hit...';
+    setActions(true,[]);
+  }else if(a==='skill'&&STEPS[step]==='skill'){
+    const c=CLASSES[cls];
+    if(cls===0){
+      entities.forEach(e=>{
+        if(e.hp>0&&hDist(e,player)===1){
+          e.hp=0;spawnDmg(e.q,e.r,'-2','#c45a3c');
+        }
+      });
+      spawnAoe(player.q,player.r,'#c45a3c',HEX*2);
+    }else if(cls===1){
+      entities.forEach(e=>{
+        if(e.hp>0&&hDist(e,player)<=2){
+          e.hp=0;spawnDmg(e.q,e.r,'-2','#6b8cae');
+        }
+      });
+      spawnAoe(player.q,player.r,'#6b8cae',HEX*3);
+    }else if(cls===2){
+      const e=entities[0];
+      if(e&&e.hp>0){
+        effects.push({type:'dash',fromQ:player.q,fromR:player.r,toQ:e.q,toR:e.r,color:'#7ea879',life:20,maxLife:20});
+        e.hp=Math.max(0,e.hp-2);spawnDmg(e.q,e.r,'-2','#7ea879');
+        player.q=e.q-1;player.r=e.r;
+      }
+    }else{
+      const ally=entities.find(e=>e.isAlly&&hDist(e,player)===1);
+      if(ally){
+        ally.hp=Math.min(ally.maxHp,ally.hp+2);
+        spawnDmg(ally.q,ally.r,'+2','#c9973e');
+        spawnAoe(ally.q,ally.r,'#c9973e',HEX*1.5);
+      }
+    }
+    setInstruction(c.ability+' used!','Cooldown: '+c.cd+' ticks before you can use it again');
+    showNext();setActions(true,[]);
+  }else if(a==='item'&&STEPS[step]==='item'){
+    entities.forEach(e=>{
+      if(e.hp>0&&hDist(e,player)<=2){e.hp=0;spawnDmg(e.q,e.r,'-2','#c45a3c');}
+    });
+    spawnAoe(player.q,player.r,'#c45050',HEX*3);
+    player.item=null;
+    setInstruction('Boom! Items are one-use.','Pick them up from defeated enemies (35% drop chance)');
+    showNext();setActions(true,[]);
+  }
+}
+
+goStep(0);
+</script>
+</body>
+</html>

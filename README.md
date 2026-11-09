@@ -1,5 +1,7 @@
 # Pocket Quest
 
+[![CI](https://github.com/hansvidaure24/Pocket-Quest/actions/workflows/ci.yml/badge.svg)](https://github.com/hansvidaure24/Pocket-Quest/actions/workflows/ci.yml)
+
 > "Jackbox made me think, why not for RPGs? So I built one. Scan a code, your phone's the controller, and you're playing."
 
 Multiplayer tactical RPG that runs entirely in the browser. One screen hosts the game, everyone else joins on their phones — no installs, no accounts, no servers to rent. Built for Discord screenshare and couch play.
